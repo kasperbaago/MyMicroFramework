@@ -67,7 +67,7 @@ class Application {
         if(file_exists($file) && file_exists($mainModel)) {
             include_once $mainModel;
             include_once $file;
-            $this->$modelname = new $modelname($this);
+            $this->$modelname = new $modelname(&$this);
             return $this->$modelname;
         } else {
             throw new Exception($file. " does not exist!");
@@ -109,7 +109,7 @@ class Application {
             include_once $mainContoller;
             include_once $file;
             $this->controller = new $controllerName();
-            $this->controller->setContext($this);
+            $this->controller->setContext(&$this);
             
             if(is_string($method) && strlen($method) && method_exists($this->controller, $method)) {
                 $this->controller->$method();
