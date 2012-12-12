@@ -9,11 +9,13 @@ class Db extends Model {
     private $dbOject;
     private $connected = false;
     private $resultObject;
+    private $insertId = 0;
     
-    public function __construct($context) {
-        parent::__construct($context);
-        if(isset($this->context->config['db'])) {
-            $this->dbSettings = $this->context->config['db'];
+    public function __construct() {
+        parent::__construct();
+        $conf = $this->getConfig();
+        if(isset($conf['db'])) {
+            $this->dbSettings = $conf['db'];
             $this->connect();
         } else {
             throw new Exception('No DB settings found in config file!');
@@ -25,12 +27,18 @@ class Db extends Model {
      * @throws Exception
      */
     public function connect() {
+        if($this->connected == true) return true;
         $this->dbOject = new mysqli($this->dbSettings['server'], $this->dbSettings['username'], $this->dbSettings['password'], $this->dbSettings['database']);
         if($this->dbOject->connect_errno) {
             throw new Exception('Could not connect to database! Server returned: '. $this->dbOject->connect_errno);
         } else {
+            $this->dbOject->set_charset('utf8');
             $this->connected = true;
         }
+    }
+
+    public function close() {
+        $this->dbOject->close();
     }
     
     /**
@@ -44,9 +52,11 @@ class Db extends Model {
         if(!$this->connected) return false;
         $this->resultObject = $this->dbOject->query($q);
         if($this->resultObject == false) {
-            throw new Exception('Query Error: '. $this->dbOject->error);
+            throw new Exception('Query Error: '. $this->dbOject->error. 'Query: '. $q);
             return false;
         }
+        $this->insertId = $this->dbOject->insert_id;
+        $this->dbOject->close();
         return $this->resultObject;
     }
     
@@ -58,13 +68,12 @@ class Db extends Model {
      * @return mysqli_result
      * @throws Exception
      */
-    public function inset($table = null, $data = null) {
+    public function insert($table = null, $data = null) {
         if(!is_string($table))  throw new Exception('Table given is not a sting');
         if(!is_array($data))    throw new Exception('Data given is not an array!');
-        
-        $table = $this->escpae($table);
-        $data = $this->escpae($data);
-        
+
+        $table = $this->escape($table, false);
+        $data = $this->escape($data);
         $fields = "(";
         $values = "(";
         $lenth = count($data);
@@ -84,10 +93,10 @@ class Db extends Model {
         $fields .= ")";
         $values .= ")";
         
-        $q = "INSET INTO ". $table. " ". $fields. " VALUES ". $values;
-        return $this->query($q);
+        $q = "INSERT INTO ". $table. " ". $fields. " VALUES ". $values;
+        return ($this->query($q)) ? $this->insertId : false;
     }
-    
+
     /**
      * Returns list where the query fits
      * 
@@ -96,14 +105,21 @@ class Db extends Model {
      * @return mysqli_result
      * @throws Exception
      */
-    public function get_where($table = null, $query = null) {
+    public function get_where($table = null, $query = null, $fields = null, $sorting = array(), $limit = 0) {
         if(!is_string($table))  throw new Exception('Table given is not a sting');
         if(!is_array($query))    throw new Exception('Query given is not an array!');
         
-        $table = $this->escpae($table, false);
+        $table = $this->escape($table, false);
         $query = $this->whereValueList($query);
-        
-        $q = "SELECT * FROM ". $table. " WHERE ". $query;
+
+        if(is_array($fields) && count($fields) > 0) {
+            $fields = $this->escape($fields, false);
+            $fields = $this->getFieldList($fields);
+        } else {
+            $fields = "*";
+        }
+
+        $q = "SELECT $fields FROM ". $table. " WHERE ". $query. " ". $this->getSortingString($sorting). " ". $this->getLimit($limit);
         return $this->query($q);
     }
     
@@ -114,10 +130,29 @@ class Db extends Model {
      * @return mysqli_result
      * @throws Exception
      */
-    public function get($table = null) {
+    public function get($table = null, $sorting = array(), $limit = 0) {
         if(!is_string($table))  throw new Exception('Table given is not a sting');
-        $table = $this->escpae($table);
-        $q = "SELECT * FROM ". $table;
+        $table = $this->escape($table, false);
+        $q = "SELECT * FROM ". $table. " ". $this->getSortingString($sorting). " ". $this->getLimit($limit);
+        return $this->query($q);
+    }
+
+    /**
+     * Returns only specific fields from table query
+     * @param string $table
+     * @param string/array $field
+     * @return mysqli_result
+     * @throws Exception
+     */
+    public function get_only($table = null, $field = null, $sort = array(), $limit = 0) {
+        if(!is_string($table)) throw new Exception('Table given is not a string');
+        if(!is_string($field) && !is_array($field)) throw new Exception('Field given is not string or array');
+        $table = $this->escape($table, false);
+        $field = $this->escape($field, false);
+        if(!is_array($field)) $field = array($field);
+        $fildStr = $this->getFieldList($field);
+
+        $q = "SELECT $fildStr FROM $table ". $this->getSortingString($sort). " ". $this->getLimit($limit);
         return $this->query($q);
     }
     
@@ -132,8 +167,7 @@ class Db extends Model {
     public function delete($table = null, $query = null) {
         if(!is_string($table))  throw new Exception('Table given is not a sting');
         
-        $table = $this->escpae($table);
-
+        $table = $this->escape($table, false);
         $q = "DELETE FROM ". $table;
         
         if(isset($query) && is_array($query)) {
@@ -157,7 +191,7 @@ class Db extends Model {
         if(!is_string($table))  throw new Exception('Table given is not a sting');
         if(!is_array($set))    throw new Exception('Set parameter given is not an array!');
         
-        $table = $this->escpae($table);
+        $table = $this->escape($table, false);
         $set = $this->setValueList($set);
         $q = "UPDATE ". $table. " SET ". $set;
         
@@ -175,8 +209,8 @@ class Db extends Model {
      * @param type $inp
      * @return boolean|string
      */
-    public function escpae($inp = null, $pling = true) {
-        if(is_array($inp)) return $this->escapeArray($inp);
+    public function escape($inp = null, $pling = true) {
+        if(is_array($inp)) return $this->escapeArray($inp, $pling);
         if(!is_string($inp)) return $inp;
         if(!$this->connected) return false;
         $ret = $this->dbOject->real_escape_string($inp);
@@ -194,11 +228,11 @@ class Db extends Model {
      * @param type $list
      * @return type
      */
-    private function escapeArray($list = null) {
+    private function escapeArray($list = null, $pling = true) {
         if(!is_array($list)) return $list;
         
         foreach($list as $k => $item) {
-            $list[$k] = $this->escpae($item);
+            $list[$k] = $this->escape($item, $pling);
         }
         
         return $list;
@@ -214,7 +248,7 @@ class Db extends Model {
         if(!is_array($list)) return $list;
         $output = "";
         foreach($list as $item) {
-            $output .= $this->escpae($item). ", ";
+            $output .= $this->escape($item). ", ";
         }
         
         return $output;
@@ -227,7 +261,7 @@ class Db extends Model {
     private function setValueList($inp = null) {
         if(!is_array($inp)) return $inp;
 
-        $query = $this->escpae($inp);
+        $query = $this->escape($inp);
         $lenth = count($query);
         $c = 1;
         
@@ -248,7 +282,7 @@ class Db extends Model {
     private function whereValueList($inp = null) {
         if(!is_array($inp)) return $inp;
 
-        $query = $this->escpae($inp);
+        $query = $this->escape($inp);
         $lenth = count($query);
         $c = 1;
         
@@ -264,6 +298,58 @@ class Db extends Model {
         }
         
         return $queryString;
+    }
+
+    /**
+     * Returns a string of DB fields
+     * @param array $field
+     * @return string
+     */
+    private function getFieldList($field = array()) {
+        $fildStr = "";
+        $fieldLen = count($field);
+        $c = 1;
+        foreach($field as $f) {
+            $fildStr .= $f;
+
+            if($c != $fieldLen) {
+                $fildStr .= ", ";
+            }
+        }
+
+        return $fildStr;
+    }
+
+    /**
+     * Returns sorting string
+     * @param array $inp
+     * @return string
+     */
+    private function getSortingString($inp = array()) {
+        if(!isset($inp['field'])) {
+            return "";
+        }
+
+        if(!isset($inp['order'])) {
+            return "";
+        }
+
+        $field = $inp['field'];
+        $order = $inp['order'];
+        return "ORDER BY $field $order";
+    }
+
+    /**
+     * Creates limit string
+     * @param int $limit
+     * @return string
+     */
+    private function getLimit($limit = 0) {
+        if($limit > 0) {
+            return "LIMIT ". $limit;
+        } else {
+            return "";
+        }
     }
 }
 

@@ -1,12 +1,7 @@
 <?php
-/*
- * :: MICRO FRAMEWORK ::
- * Created by Kasper Baagø Jensen(kasper@kasperbaago.dk)
- * 
- * @version 1.0
- * @author: Kasper Baagø Jensen 
- */
-
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 include 'application/application.php';
-$app = new Application(); //Starts the apllication
+$app = new Application();
+$app->init();
 ?>
