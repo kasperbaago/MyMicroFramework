@@ -4,11 +4,10 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-
 $conf = array();
 
 /* Main Controller */
-$conf['mainController'] = "";
+$conf['mainController'] = "main";
 $conf['baseAddress'] = "";
 
 /* Db Settings */
@@ -24,9 +23,4 @@ $conf['template']['js_autoload'] = array();
 $conf['template']['folderConf'] = array();
 $conf['template']['js_lib_autoload'] = array();
 
-/*
- * :: DEBUG MODE - UNCOMMENT IF NTO DEBUGGING!
- */
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 ?>
