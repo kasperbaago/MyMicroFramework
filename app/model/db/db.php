@@ -1,10 +1,14 @@
 <?php
+namespace app\model\db;
+use \mysqli;
+use \Exception;
+
 /**
  * :: DB Model ::
  * Maintains connection to database
  */
 
-class Db extends Model {
+class Db extends \app\model\Model {
     private $dbSettings;
     private $dbOject;
     private $connected = false;

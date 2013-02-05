@@ -6,8 +6,9 @@
  * @version 1.0
  * @author Kasper Baagø Jensen <kapper14@gmail.com>
  */
+namespace app\controller;
 
-class Controller extends Application {    
+class Controller extends \app\Application {
      
      public function index() {
          

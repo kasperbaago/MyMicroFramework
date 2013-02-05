@@ -1,9 +1,11 @@
 <?php
+namespace app\model\template;
+
 /**
  * Controls the content output of the site
  * @author Kasper Baagø Jensen
  */
-class Temp extends Model {
+class Temp extends \app\model\Model {
     private $folders, $title, $titlePrefix, $styles, $libScripts, $headerScripts, $footerScripts, $content;
     private $injectedData = array();
     private $menu = array();
