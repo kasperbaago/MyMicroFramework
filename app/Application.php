@@ -1,8 +1,10 @@
 <?php
+namespace app;
+use \Exception;
 /**
  * :: APPLICATION CLASS ::
- * Main application class.
- * Contains the main methods to load controller, model and view for application
+ * Main app class.
+ * Contains the main methods to load controller, model and view for app
  * 
  * @author kasp466h
  * @version 0.6b
@@ -11,9 +13,9 @@ class Application {
     private $config;
     private $uri;
     private $controller;
-    private static $modelFolder = "application/model/";
-    private static $controllerFolder = "application/controller/";
-    private static $viewFolder = "application/view/";
+    private static $modelFolder = "app/model/";
+    private static $controllerFolder = "app/controller/";
+    private static $viewFolder = "app/view/";
     private $baseDir;
 
     public function __construct() {
@@ -108,13 +110,14 @@ class Application {
      */
     public function loadController($controllerName, $method = null) {
         if(!(isset($controllerName) && is_string($controllerName))) throw new Exception('Given parameter is not a string!');
-        $file = Application::$controllerFolder. $controllerName. ".php";
-        $mainContoller = Application::$controllerFolder. "controller.php";
+        //$file = Application::$controllerFolder. $controllerName. ".php";
+        //$mainContoller = Application::$controllerFolder. "Controller.php";
         
-        $controllerName = $this->getClassName($file);
-        if(file_exists($file) && file_exists($mainContoller)) {
-            include_once $mainContoller;
-            include_once $file;
+        //$controllerName = $this->getClassName($file);
+
+        $controllerName = "app\controller\\". $controllerName;
+
+        if(class_exists($controllerName)) {
             $this->controller = new $controllerName();
             
             if(is_string($method) && strlen($method) && method_exists($this->controller, $method)) {
@@ -127,7 +130,7 @@ class Application {
                 $this->controller->index();
             }
         } else {
-            throw new Exception($file. " does not exist!");
+            throw new Exception($controllerName. " does not exist!");
         }
     }
     

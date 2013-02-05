@@ -8,7 +8,7 @@
 $conf = array();
 
 /* Main Controller */
-$conf['mainController'] = "";
+$conf['mainController'] = "main";
 $conf['baseAddress'] = "";
 
 /* Db Settings */

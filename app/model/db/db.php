@@ -1,4 +1,6 @@
 <?php
+namespace app\model\db;
+
 /**
  * :: DB Model ::
  * Maintains connection to database

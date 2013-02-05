@@ -1,4 +1,6 @@
 <?php
+namespace app\model\Temp;
+
 /**
  * Controls the content output of the site
  * @author Kasper Baagø Jensen
