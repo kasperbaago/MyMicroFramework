@@ -4,7 +4,6 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-
 $conf = array();
 
 /* Main Controller */
@@ -23,6 +22,5 @@ $conf['template']['css_autoload'] = array();
 $conf['template']['js_autoload'] = array();
 $conf['template']['folderConf'] = array();
 $conf['template']['js_lib_autoload'] = array();
-
 
 ?>
