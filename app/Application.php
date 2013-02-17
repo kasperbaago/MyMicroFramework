@@ -65,18 +65,15 @@ class Application {
      * @param type $modelname
      */
     public function loadModel($modelname) {
-        if(isset($this->$modelname)) return;
+        $class = $this->getClassName($modelname);
+        if(isset($this->$class)) return;
         if(!(isset($modelname) && is_string($modelname))) throw new Exception('Given parameter is not a string!');
-        $file = Application::$modelFolder. $modelname. ".php";
-        $modelname = $this->getClassName($file);  
-        $mainModel = Application::$modelFolder. "model.php";
-        
-        if(file_exists($file) && file_exists($mainModel)) {
-            include_once $mainModel;
-            include_once $file;
-            $this->$modelname = new $modelname();
+        $modelname = "app\model\\". $modelname;
+
+        if(class_exists($modelname)) {
+            $this->$class = new $modelname();
         } else {
-            throw new Exception($file. " does not exist!");
+            throw new Exception($modelname. " does not exist!");
         }
     }
     
@@ -92,10 +89,10 @@ class Application {
             
             if($output == true) {
                 ob_start();
-                include_once $file;
+                include $file;
                 return ob_get_clean();
             } else {
-                include_once $file;
+                include $file;
             }
             
         } else {
@@ -110,11 +107,6 @@ class Application {
      */
     public function loadController($controllerName, $method = null) {
         if(!(isset($controllerName) && is_string($controllerName))) throw new Exception('Given parameter is not a string!');
-        //$file = Application::$controllerFolder. $controllerName. ".php";
-        //$mainContoller = Application::$controllerFolder. "Controller.php";
-        
-        //$controllerName = $this->getClassName($file);
-
         $controllerName = "app\controller\\". $controllerName;
 
         if(class_exists($controllerName)) {
@@ -156,7 +148,7 @@ class Application {
      */
     private function getClassName($path) {
         if(!is_string($path)) throw new Exception('Path given is not a string!');
-        $parts = explode("/", $path);
+        $parts = explode("\\", $path);
         if(count($parts) > 0) {
             $ret = $parts[count($parts) - 1];
         } else {
