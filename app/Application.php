@@ -1,8 +1,10 @@
 <?php
+namespace app;
+use \Exception;
 /**
  * :: APPLICATION CLASS ::
- * Main application class.
- * Contains the main methods to load controller, model and view for application
+ * Main app class.
+ * Contains the main methods to load controller, model and view for app
  * 
  * @author kasp466h
  * @version 0.6b
@@ -11,9 +13,9 @@ class Application {
     private $config;
     private $uri;
     private $controller;
-    private static $modelFolder = "application/model/";
-    private static $controllerFolder = "application/controller/";
-    private static $viewFolder = "application/view/";
+    private static $modelFolder = "app/model/";
+    private static $controllerFolder = "app/controller/";
+    private static $viewFolder = "app/view/";
     private $baseDir;
 
     public function __construct() {
@@ -63,18 +65,15 @@ class Application {
      * @param type $modelname
      */
     public function loadModel($modelname) {
-        if(isset($this->$modelname)) return;
+        $class = $this->getClassName($modelname);
+        if(isset($this->$class)) return;
         if(!(isset($modelname) && is_string($modelname))) throw new Exception('Given parameter is not a string!');
-        $file = Application::$modelFolder. $modelname. ".php";
-        $modelname = $this->getClassName($file);  
-        $mainModel = Application::$modelFolder. "model.php";
-        
-        if(file_exists($file) && file_exists($mainModel)) {
-            include_once $mainModel;
-            include_once $file;
-            $this->$modelname = new $modelname();
+        $modelname = "app\model\\". $modelname;
+
+        if(class_exists($modelname)) {
+            $this->$class = new $modelname();
         } else {
-            throw new Exception($file. " does not exist!");
+            throw new Exception($modelname. " does not exist!");
         }
     }
     
@@ -90,10 +89,10 @@ class Application {
             
             if($output == true) {
                 ob_start();
-                include_once $file;
+                include $file;
                 return ob_get_clean();
             } else {
-                include_once $file;
+                include $file;
             }
             
         } else {
@@ -108,13 +107,9 @@ class Application {
      */
     public function loadController($controllerName, $method = null) {
         if(!(isset($controllerName) && is_string($controllerName))) throw new Exception('Given parameter is not a string!');
-        $file = Application::$controllerFolder. $controllerName. ".php";
-        $mainContoller = Application::$controllerFolder. "controller.php";
-        
-        $controllerName = $this->getClassName($file);
-        if(file_exists($file) && file_exists($mainContoller)) {
-            include_once $mainContoller;
-            include_once $file;
+        $controllerName = "app\controller\\". $controllerName;
+
+        if(class_exists($controllerName)) {
             $this->controller = new $controllerName();
             
             if(is_string($method) && strlen($method) && method_exists($this->controller, $method)) {
@@ -127,7 +122,7 @@ class Application {
                 $this->controller->index();
             }
         } else {
-            throw new Exception($file. " does not exist!");
+            throw new Exception($controllerName. " does not exist!");
         }
     }
     
@@ -153,7 +148,7 @@ class Application {
      */
     private function getClassName($path) {
         if(!is_string($path)) throw new Exception('Path given is not a string!');
-        $parts = explode("/", $path);
+        $parts = explode("\\", $path);
         if(count($parts) > 0) {
             $ret = $parts[count($parts) - 1];
         } else {
